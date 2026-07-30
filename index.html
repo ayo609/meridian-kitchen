@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raffia Palm — Fresh Flavours, Premium Dining</title>
+<meta name="description" content="Raffia Palm — premium multi-category dining. Register to explore the full menu, reserve a table, or order online.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#171012;
+    --bg-2:#1D1416;
+    --coral:#FF6B4A;
+    --amber:#FFB648;
+    --berry:#FF3D77;
+    --glass:rgba(255,255,255,0.06);
+    --glass-strong:rgba(255,255,255,0.11);
+    --glass-border:rgba(255,255,255,0.14);
+    --text:#FFF6EE;
+    --muted:#C9B8AE;
+    --star:#FFC94D;
+    --radius:12px;
+    --ease:cubic-bezier(.22,.9,.25,1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{ background:var(--bg); color:var(--text); font-family:'Manrope',sans-serif; overflow-x:hidden; }
+  h1,h2,h3,.display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
+  a{color:inherit; text-decoration:none;}
+  img{max-width:100%; display:block;}
+  button{font-family:inherit;}
+  ::selection{ background:var(--coral); color:#171012; }
+  a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--amber); outline-offset:3px; }
+
+  .blobs{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .blob{ position:absolute; border-radius:50%; filter:blur(90px); opacity:0.30; }
+  .blob.b1{ width:520px; height:520px; background:var(--coral); top:-140px; left:-100px; }
+  .blob.b2{ width:460px; height:460px; background:var(--amber); top:220px; right:-160px; }
+  .blob.b3{ width:380px; height:380px; background:var(--berry); bottom:-120px; left:30%; opacity:0.18; }
+
+  /* ---------- Toasts ---------- */
+  .toast-stack{ position:fixed; top:18px; left:18px; z-index:200; display:flex; flex-direction:column; gap:10px; }
+  .toast{
+    background:rgba(23,16,18,0.94); border:1px solid var(--glass-border); border-left:3px solid var(--coral);
+    color:var(--text); padding:13px 18px; border-radius:8px; font-size:0.86rem; font-weight:500;
+    box-shadow:0 14px 30px -10px rgba(0,0,0,0.5);
+    transform:translateX(-120%); transition:transform .35s var(--ease);
+    max-width:280px;
+  }
+  .toast.show{ transform:translateX(0); }
+
+  /* ---------- Marquee ---------- */
+  .marquee{ position:relative; z-index:20; background:linear-gradient(90deg, var(--coral), var(--berry)); color:#1a0e0a; overflow:hidden; white-space:nowrap; padding:8px 0; font-weight:600; font-size:0.78rem; letter-spacing:0.04em; }
+  .marquee .track{ display:inline-block; animation: scroll-left 24s linear infinite; padding-left:100%; }
+  .marquee span{ margin:0 26px; }
+  @keyframes scroll-left{ from{transform:translateX(0);} to{transform:translateX(-100%);} }
+
+  /* ---------- Nav ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px clamp(20px,5vw,56px);
+    background:rgba(23,16,18,0.6); backdrop-filter:blur(16px); border-bottom:1px solid var(--glass-border);
+  }
+  .brand{ display:flex; align-items:center; gap:11px; font-family:'Fraunces',serif; font-weight:600; font-size:1.1rem; }
+  .brand img.logo{ width:38px; height:38px; border-radius:8px; object-fit:cover; }
+  nav ul{ display:flex; gap:26px; list-style:none; }
+  nav a{ font-size:0.86rem; color:var(--muted); transition:color .25s var(--ease); }
+  nav a:hover{ color:var(--text); }
+  .nav-actions{ display:flex; align-items:center; gap:10px; }
+  .btn-ghost{
+    padding:9px 16px; border-radius:8px; font-weight:600; font-size:0.8rem;
+    border:1px solid var(--glass-border); color:var(--text); background:var(--glass);
+    transition: border-color .25s var(--ease), transform .25s var(--ease);
+  }
+  .btn-ghost:hover{ border-color:var(--amber); transform:translateY(-2px); }
+  .btn-order{
+    padding:10px 18px; border-radius:8px; font-weight:600; font-size:0.8rem;
+    background:linear-gradient(135deg, var(--coral), var(--amber)); color:#1a0e0a;
+    transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+    white-space:nowrap;
+  }
+  .btn-order:hover{ transform:translateY(-2px); box-shadow:0 10px 24px -8px rgba(255,107,74,0.5); }
+  .menu-toggle{ display:none; background:var(--glass); border:1px solid var(--glass-border); width:40px; height:40px; border-radius:8px; color:var(--text); font-size:1.05rem; cursor:pointer; }
+  @media (max-width:980px){ nav{ display:none; } .nav-actions .btn-ghost{ display:none; } .menu-toggle{ display:block; } }
+
+  /* ---------- Drawer ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(3px); z-index:70; opacity:0; pointer-events:none; transition:opacity .35s var(--ease); }
+  .overlay.open{ opacity:1; pointer-events:auto; }
+  .drawer{ position:fixed; top:0; right:0; height:100%; width:min(300px,80vw); background:var(--bg-2); border-left:1px solid var(--glass-border); z-index:80; transform:translateX(100%); transition:transform .4s var(--ease); padding:24px 22px; display:flex; flex-direction:column; gap:4px; }
+  .drawer.open{ transform:translateX(0); }
+  .drawer-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .drawer-close{ background:none; border:none; color:var(--text); font-size:1.25rem; cursor:pointer; }
+  .drawer a{ padding:13px 4px; border-bottom:1px solid var(--glass-border); color:var(--text); font-size:0.98rem; }
+  .drawer .btn-order, .drawer .btn-ghost{ margin-top:14px; text-align:center; }
+
+  /* ---------- Hero ---------- */
+  .hero{ position:relative; z-index:1; min-height:auto; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:64px 20px 44px; }
+  .eyebrow{ font-size:0.76rem; font-weight:600; letter-spacing:0.13em; text-transform:uppercase; color:var(--amber); margin-bottom:16px; }
+  .hero h1{ font-size:clamp(2.3rem,6.5vw,4.2rem); font-weight:600; line-height:1.06; max-width:780px; }
+  .hero h1 em{ font-style:italic; color:var(--coral); }
+  .hero p{ margin-top:16px; max-width:520px; color:var(--muted); font-size:1.02rem; font-weight:300; }
+  .cta-row{ margin-top:28px; display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .btn-primary, .btn-secondary{ padding:14px 28px; border-radius:8px; font-weight:600; font-size:0.88rem; transition: transform .3s var(--ease), box-shadow .3s var(--ease); }
+  .btn-primary{ background:linear-gradient(135deg, var(--coral), var(--amber)); color:#1a0e0a; }
+  .btn-primary:hover{ transform:translateY(-3px); box-shadow:0 16px 32px -10px rgba(255,107,74,0.5); }
+  .btn-secondary{ background:var(--glass); border:1px solid var(--glass-border); backdrop-filter:blur(10px); color:var(--text); }
+  .btn-secondary:hover{ transform:translateY(-3px); border-color:var(--amber); }
+
+  /* ---------- Gallery strip (before search) ---------- */
+  .gallery-strip-wrap{ margin-top:38px; width:100%; max-width:920px; position:relative; }
+  .scroll-row{ display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x mandatory; padding:4px 4px 10px; scrollbar-width:none; }
+  .scroll-row::-webkit-scrollbar{ display:none; }
+  .gallery-strip-wrap .scroll-row img{
+    scroll-snap-align:center; flex:0 0 auto; width:220px; height:150px; object-fit:cover; border-radius:var(--radius);
+    border:1px solid var(--glass-border);
+  }
+  .scroll-arrows{ display:flex; justify-content:center; gap:10px; margin-top:10px; }
+  .arrow-btn{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--glass-border); background:var(--glass);
+    color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.9rem;
+    transition: background .25s var(--ease), border-color .25s var(--ease);
+  }
+  .arrow-btn:hover{ background:var(--glass-strong); border-color:var(--amber); }
+
+  /* ---------- Search ---------- */
+  .search-form{ margin-top:30px; display:flex; align-items:center; gap:10px; background:var(--glass); border:1px solid var(--glass-border); backdrop-filter:blur(14px); border-radius:10px; padding:7px 7px 7px 20px; max-width:520px; width:100%; }
+  .search-form input{ flex:1; background:none; border:none; color:var(--text); font-size:0.94rem; font-family:inherit; }
+  .search-form input::placeholder{ color:var(--muted); }
+  .search-form input:focus{ outline:none; }
+  .search-form button{ background:linear-gradient(135deg, var(--coral), var(--amber)); color:#1a0e0a; border:none; border-radius:8px; padding:10px 20px; font-weight:600; font-size:0.84rem; cursor:pointer; transition: transform .25s var(--ease); }
+  .search-form button:hover{ transform:scale(1.04); }
+
+  .search-results{ max-width:520px; width:100%; margin:14px auto 0; text-align:left; }
+  .search-results.hidden{ display:none; }
+  .sr-item{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border:1px solid var(--glass-border); border-radius:8px; background:var(--glass); margin-bottom:8px; cursor:pointer; transition: border-color .25s var(--ease); }
+  .sr-item:hover{ border-color:var(--amber); }
+  .sr-item .name{ font-weight:600; font-size:0.9rem; }
+  .sr-item .cat{ color:var(--muted); font-size:0.76rem; }
+  .sr-empty{ padding:20px; border:1px solid var(--glass-border); border-radius:10px; background:var(--glass); text-align:center; }
+  .sr-empty p{ color:var(--muted); font-size:0.88rem; margin-bottom:14px; }
+  .sr-empty .btn-row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+  /* ---------- Section shell ---------- */
+  section{ position:relative; z-index:1; padding:70px clamp(20px,6vw,72px); }
+  .section-head{ max-width:640px; margin:0 auto 36px; text-align:center; }
+  .section-head .eyebrow{ margin-bottom:10px; }
+  .section-head h2{ font-size:clamp(1.6rem,3.6vw,2.3rem); font-weight:600; }
+  .section-head p{ color:var(--muted); margin-top:10px; font-weight:300; }
+
+  /* ---------- Category chips ---------- */
+  .cat-scroll{ display:flex; gap:14px; overflow-x:auto; padding:4px 4px 12px; scrollbar-width:none; max-width:1100px; margin:0 auto; }
+  .cat-scroll::-webkit-scrollbar{ display:none; }
+  .cat-chip{ flex:0 0 auto; padding:11px 20px; border-radius:8px; background:var(--glass); border:1px solid var(--glass-border); backdrop-filter:blur(10px); font-size:0.85rem; font-weight:500; white-space:nowrap; color:var(--text); transition: background .3s var(--ease), transform .3s var(--ease), border-color .3s var(--ease); cursor:pointer; }
+  .cat-chip:hover{ background:var(--glass-strong); transform:translateY(-2px); border-color:var(--amber); }
+
+  /* ---------- Dish rows (horizontal scroll) ---------- */
+  .dish-row-wrap{ position:relative; max-width:1180px; margin:0 auto; }
+  .dish-row{ display:flex; gap:20px; overflow-x:auto; scroll-snap-type:x mandatory; padding:6px 4px 16px; scrollbar-width:none; }
+  .dish-row::-webkit-scrollbar{ display:none; }
+  .dish-card{ scroll-snap-align:start; flex:0 0 auto; width:260px; border-radius:var(--radius); overflow:hidden; background:var(--glass); border:1px solid var(--glass-border); backdrop-filter:blur(12px); transition: border-color .3s var(--ease); opacity:0; translate:0 16px; }
+  .dish-card.in-view{ animation: rise .6s var(--ease) forwards; }
+  @keyframes rise{ from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:translateY(0);} }
+  .dish-card:hover{ border-color:var(--amber); }
+  .dish-media{ position:relative; height:170px; overflow:hidden; background:linear-gradient(150deg,#2a1b17,#171012); }
+  .dish-media img{ width:100%; height:100%; object-fit:cover; transition: transform .6s var(--ease); }
+  .dish-card:hover .dish-media img{ transform:scale(1.06); }
+  .fav-btn{ position:absolute; top:10px; right:10px; width:32px; height:32px; border-radius:50%; background:rgba(23,16,18,0.6); backdrop-filter:blur(8px); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:center; color:var(--text); font-size:0.9rem; cursor:pointer; transition: background .25s var(--ease), transform .25s var(--ease); }
+  .fav-btn:hover{ transform:scale(1.1); }
+  .fav-btn.active{ color:var(--coral); }
+  .dish-body{ padding:16px 18px 20px; }
+  .dish-cat{ font-size:0.66rem; color:var(--amber); font-weight:600; text-transform:uppercase; letter-spacing:0.06em; }
+  .dish-body h4{ font-family:'Fraunces',serif; font-size:1.05rem; font-weight:600; margin:6px 0 4px; }
+  .dish-desc{ color:var(--muted); font-size:0.82rem; font-weight:300; margin-bottom:10px; }
+  .dish-meta{ display:flex; align-items:center; justify-content:space-between; }
+  .rating{ display:flex; align-items:center; gap:5px; font-size:0.8rem; color:var(--star); }
+  .price{ font-weight:700; font-size:0.98rem; }
+  .btn-cart{ width:100%; margin-top:12px; padding:10px; border-radius:8px; border:none; cursor:pointer; background:linear-gradient(135deg, var(--coral), var(--amber)); color:#1a0e0a; font-weight:600; font-size:0.82rem; transition: transform .25s var(--ease); }
+  .btn-cart:hover{ transform:translateY(-2px); }
+  .skeleton{ animation: pulse 1.4s ease-in-out infinite; background:var(--glass-strong); }
+  @keyframes pulse{ 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+  .view-all{ text-align:center; margin-top:24px; }
+
+  /* ---------- Classic card (About / Offers) ---------- */
+  .classic-card{
+    max-width:760px; margin:0 auto; border:1px solid var(--glass-border); border-radius:var(--radius);
+    background:var(--glass); padding:clamp(28px,5vw,44px); position:relative;
+  }
+  .classic-card::before{
+    content:''; position:absolute; top:14px; left:14px; right:14px; bottom:14px;
+    border:1px solid rgba(255,182,72,0.18); border-radius:8px; pointer-events:none;
+  }
+  .classic-card .eyebrow{ margin-bottom:14px; }
+  .classic-card h2{ font-size:clamp(1.5rem,3.4vw,2rem); margin-bottom:16px; }
+  .classic-card p{ color:var(--muted); font-weight:300; font-size:1rem; line-height:1.8; }
+
+  /* ---------- Offer banner ---------- */
+  .offer-banner{ max-width:1000px; margin:0 auto; border-radius:var(--radius); padding:38px clamp(24px,5vw,52px); background:linear-gradient(120deg, rgba(255,107,74,0.15), rgba(255,182,72,0.09)); border:1px solid var(--glass-border); display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+  .offer-banner h3{ font-size:1.3rem; font-weight:600; margin-bottom:8px; }
+  .offer-banner p{ color:var(--muted); font-weight:300; }
+
+  /* ---------- Why choose us (horizontal, sharp, no emoji) ---------- */
+  .why-row{ display:flex; gap:20px; overflow-x:auto; scroll-snap-type:x mandatory; padding:4px 4px 14px; scrollbar-width:none; max-width:1100px; margin:0 auto; }
+  .why-row::-webkit-scrollbar{ display:none; }
+  .why-card{ scroll-snap-align:start; flex:0 0 300px; padding:32px 26px; border-radius:var(--radius); background:var(--glass); border:1px solid var(--glass-border); }
+  .why-card .icon{ width:30px; height:30px; margin-bottom:18px; color:var(--amber); }
+  .why-card h4{ font-family:'Fraunces',serif; font-size:1.2rem; margin-bottom:12px; font-weight:600; }
+  .why-card p{ color:var(--muted); font-size:0.95rem; font-weight:300; line-height:1.7; }
+
+  /* ---------- Testimonials (continuous auto-scroll) ---------- */
+  .t-scroll-wrap{ overflow:hidden; max-width:100%; position:relative; }
+  .t-scroll-wrap::before, .t-scroll-wrap::after{
+    content:''; position:absolute; top:0; bottom:0; width:60px; z-index:2; pointer-events:none;
+  }
+  .t-scroll-wrap::before{ left:0; background:linear-gradient(90deg, var(--bg), transparent); }
+  .t-scroll-wrap::after{ right:0; background:linear-gradient(270deg, var(--bg), transparent); }
+  .t-track{ display:flex; gap:20px; width:max-content; }
+  .t-card{ width:340px; background:var(--glass); border:1px solid var(--glass-border); border-radius:var(--radius); padding:26px 28px; }
+  .t-card .rating{ margin-bottom:12px; }
+  .t-card p.quote{ font-size:0.96rem; font-weight:300; color:var(--text); margin-bottom:16px; line-height:1.6; }
+  .t-person{ display:flex; align-items:center; gap:12px; }
+  .t-avatar{ width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--coral),var(--amber)); display:flex; align-items:center; justify-content:center; font-weight:700; color:#1a0e0a; font-size:0.78rem; flex:0 0 auto; }
+  .t-person .name{ font-weight:600; font-size:0.88rem; }
+  .t-person .date{ color:var(--muted); font-size:0.74rem; }
+
+  /* ---------- Reservation CTA ---------- */
+  .cta-banner{ max-width:1000px; margin:0 auto; text-align:center; padding:56px clamp(24px,5vw,56px); border-radius:var(--radius); background:linear-gradient(135deg, rgba(255,107,74,0.18), rgba(255,61,119,0.12)); border:1px solid var(--glass-border); }
+  .cta-banner h2{ font-size:clamp(1.7rem,3.6vw,2.3rem); margin-bottom:14px; }
+  .cta-banner p{ color:var(--muted); margin-bottom:24px; font-weight:300; }
+
+  /* ---------- Footer ---------- */
+  footer{ position:relative; z-index:1; border-top:1px solid var(--glass-border); padding:48px clamp(20px,6vw,72px) 0; }
+  .footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:32px; max-width:1180px; margin:0 auto 36px; }
+  @media (max-width:760px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+  .footer-brand{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .footer-brand img{ width:32px; height:32px; border-radius:7px; object-fit:cover; }
+  .footer-col p.desc{ color:var(--muted); font-size:0.85rem; font-weight:300; max-width:260px; line-height:1.7; }
+  .footer-col h5{ font-size:0.76rem; color:var(--muted); margin-bottom:14px; text-transform:uppercase; letter-spacing:0.08em; }
+  .footer-col a{ display:block; color:var(--text); font-size:0.86rem; padding:5px 0; opacity:0.9; }
+  .footer-col a:hover{ opacity:1; color:var(--amber); }
+  .social-row{ display:flex; gap:12px; margin-top:6px; }
+  .social-icon{
+    width:36px; height:36px; border-radius:8px; border:1px solid var(--glass-border); background:var(--glass);
+    display:flex; align-items:center; justify-content:center; transition: border-color .25s var(--ease), transform .25s var(--ease);
+  }
+  .social-icon svg{ width:17px; height:17px; }
+  .social-icon:hover{ border-color:var(--amber); transform:translateY(-2px); }
+  .footer-bottom{ border-top:1px solid var(--glass-border); padding:20px clamp(20px,6vw,72px); text-align:center; color:var(--muted); font-size:0.76rem; }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important; }
+    .marquee .track{ animation:none; }
+    .t-track{ animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blobs"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="toast-stack" id="toastStack"></div>
+
+<div class="marquee"><div class="track" id="marqueeTrack"></div></div>
+
+<header>
+  <a href="#top" class="brand"><img src="Raffia.jpg" class="logo" alt="Raffia Palm logo" onerror="this.style.display='none'"> Raffia Palm</a>
+  <nav>
+    <ul>
+      <li><a href="#" data-gate>Menu</a></li>
+      <li><a href="#gallery">Gallery</a></li>
+      <li><a href="reservations.html">Reservations</a></li>
+      <li><a href="#location">Location</a></li>
+    </ul>
+  </nav>
+  <div class="nav-actions">
+    <a href="login/auth.html" class="btn-ghost" data-nav-toast="Taking you to login…">Log In</a>
+    <a href="register/auth.html" class="btn-order" data-nav-toast="Taking you to registration…">Sign Up</a>
+    <button class="menu-toggle" id="menuToggle" aria-label="Open menu">☰</button>
+  </div>
+</header>
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <span class="brand"><img src="Raffia.jpg" class="logo" alt="Raffia Palm logo" onerror="this.style.display='none'"></span>
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu">✕</button>
+  </div>
+  <a href="#" data-gate>Menu</a>
+  <a href="#gallery">Gallery</a>
+  <a href="reservations.html">Reservations</a>
+  <a href="#location">Location</a>
+  <a href="login/auth.html" class="btn-ghost" data-nav-toast="Taking you to login…">Log In</a>
+  <a href="register/auth.html" class="btn-order" data-nav-toast="Taking you to registration…">Sign Up</a>
+</div>
+
+<main id="top">
+
+  <section class="hero">
+    <span class="eyebrow">Fresh Flavours · Premium Dining</span>
+    <h1>Every cuisine, <em>one</em> unforgettable table.</h1>
+    <p id="heroTagline">Grill, seafood, pasta and pastry — crafted with the same obsession for quality, served with genuine warmth.</p>
+    <div class="cta-row">
+      <a href="reservations.html" class="btn-primary">Reserve a Table</a>
+      <a href="order.html" class="btn-secondary">Order Online</a>
+    </div>
+
+    <div class="gallery-strip-wrap">
+      <div class="scroll-row" id="heroGalleryRow">
+        <img src="Raffia-pic1.jpg" alt="Raffia Palm interior" loading="lazy" onerror="this.parentElement.removeChild(this)">
+        <img src="Raffia-pic2.jpg" alt="Raffia Palm dining room" loading="lazy" onerror="this.parentElement.removeChild(this)">
+        <img src="Raffia-pic3.jpg" alt="Raffia Palm plated dish" loading="lazy" onerror="this.parentElement.removeChild(this)">
+        <img src="Raffia-pic4.jpg" alt="Raffia Palm bar area" loading="lazy" onerror="this.parentElement.removeChild(this)">
+        <img src="Raffia-pic5.jpg" alt="Raffia Palm terrace" loading="lazy" onerror="this.parentElement.removeChild(this)">
+      </div>
+      <div class="scroll-arrows">
+        <button class="arrow-btn" data-scroll-target="heroGalleryRow" data-dir="-1" aria-label="Scroll left">←</button>
+        <button class="arrow-btn" data-scroll-target="heroGalleryRow" data-dir="1" aria-label="Scroll right">→</button>
+      </div>
+    </div>
+
+    <form class="search-form" id="homeSearchForm">
+      <input type="text" id="homeSearchInput" placeholder="Search for a dish… e.g. jollof, salmon, tiramisu" aria-label="Search dishes">
+      <button type="submit">Search</button>
+    </form>
+    <div class="search-results hidden" id="searchResults"></div>
+  </section>
+
+  <section id="categories">
+    <div class="section-head">
+      <span class="eyebrow">Browse</span>
+      <h2>Find your craving</h2>
+    </div>
+    <div class="cat-scroll" id="catScroll"></div>
+  </section>
+
+  <section id="featured">
+    <div class="section-head">
+      <span class="eyebrow">Featured</span>
+      <h2>This week's picks</h2>
+      <p>Hand-picked by the chef, updated regularly.</p>
+    </div>
+    <div class="dish-row-wrap">
+      <div class="dish-row" id="featuredGrid"></div>
+    </div>
+    <div class="view-all"><a href="#" class="btn-secondary" data-gate>View Full Menu</a></div>
+  </section>
+
+  <section id="popular">
+    <div class="section-head">
+      <span class="eyebrow">Popular</span>
+      <h2>What everyone orders</h2>
+    </div>
+    <div class="dish-row-wrap">
+      <div class="dish-row" id="popularGrid"></div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="classic-card">
+      <span class="eyebrow">Our Story</span>
+      <h2>A kitchen without borders</h2>
+      <p id="aboutText">Raffia Palm was built on one idea: great food shouldn't be boxed into a single cuisine. Our chefs move fluidly between grill, sea, grain and sugar — one menu, every craving covered, served in a room built for real conversation and real occasions.</p>
+    </div>
+  </section>
+
+  <section id="offers">
+    <div class="offer-banner">
+      <div>
+        <h3 id="offerTitle">Weekday Lunch Special</h3>
+        <p id="offerText">20% off all Chef's Table lunch orders, Monday–Thursday.</p>
+      </div>
+      <a href="#" class="btn-primary" data-gate>See Offer</a>
+    </div>
+  </section>
+
+  <section id="why">
+    <div class="section-head">
+      <span class="eyebrow">Why Choose Us</span>
+      <h2>Built for people who take their food seriously</h2>
+    </div>
+    <div class="why-row">
+      <div class="why-card">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3c1.5 3 4 4.5 4 8a4 4 0 0 1-8 0c0-1.2.5-2 1-3 .2 1 .8 1.5 1.5 1.5C11 9 11 5 12 3Z"/></svg>
+        <h4>Made fresh, daily</h4>
+        <p>Nothing is pre-made or held over. Every dish begins the moment your order reaches the kitchen, cooked to order and plated to leave immediately.</p>
+      </div>
+      <div class="why-card">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <h4>22-minute average prep</h4>
+        <p>Speed without shortcuts. Our kitchen is built around parallel stations so complex dishes still leave fast, without compromising on technique.</p>
+      </div>
+      <div class="why-card">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18"/></svg>
+        <h4>Every cuisine, one table</h4>
+        <p>No need to compromise between guests who want grill, seafood, or pasta. The entire menu is built to be shared, whatever the craving.</p>
+      </div>
+      <div class="why-card">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.2l5.9-.8Z"/></svg>
+        <h4>4.8-star average</h4>
+        <p>Rated consistently by real guests, week over week — reviews are public and unfiltered on our booking and delivery partners.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="testimonials">
+    <div class="section-head">
+      <span class="eyebrow">Reviews</span>
+      <h2>What guests are saying</h2>
+    </div>
+    <div class="t-scroll-wrap">
+      <div class="t-track" id="testimonialTrack"></div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <div class="section-head">
+      <span class="eyebrow">Gallery</span>
+      <h2>A glimpse inside</h2>
+    </div>
+    <div class="dish-row-wrap">
+      <div class="scroll-row" id="galleryRow" style="max-width:1100px; margin:0 auto;"></div>
+    </div>
+  </section>
+
+  <section id="reserve-cta">
+    <div class="cta-banner">
+      <h2>Your table is waiting.</h2>
+      <p>Reserve in under a minute — we'll confirm by email.</p>
+      <a href="reservations.html" class="btn-primary">Reserve a Table</a>
+    </div>
+  </section>
+
+  <section id="location">
+    <div class="section-head">
+      <span class="eyebrow">Visit</span>
+      <h2 id="locationTitle">Victoria Island, Lagos</h2>
+      <p id="locationText">14 Raffia Close, Off Ahmadu Bello Way · Lunch 12:00–15:30 · Dinner 18:00–23:00</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <div class="footer-brand"><img src="Raffia.jpg" alt="Raffia Palm logo" onerror="this.style.display='none'"><span class="brand" style="font-size:1rem;">Raffia Palm</span></div>
+      <p class="desc">Premium multi-category dining in Victoria Island — every cuisine, one table.</p>
+      <div class="social-row">
+        <a class="social-icon" href="#" id="footerInstagram" aria-label="Instagram" data-nav-toast="Opening Instagram…">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1"/></svg>
+        </a>
+        <a class="social-icon" href="#" id="footerFacebook" aria-label="Facebook" data-nav-toast="Opening Facebook…">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 9h3V6h-3a3 3 0 0 0-3 3v2H9v3h2v6h3v-6h3l1-3h-4v-2a1 1 0 0 1 1-1Z"/></svg>
+        </a>
+        <a class="social-icon" href="#" id="footerTiktok" aria-label="TikTok" data-nav-toast="Opening TikTok…">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 4v9.5a3.5 3.5 0 1 1-3-3.46"/><path d="M14 4c.6 2.3 2.2 3.8 4.5 4.1"/></svg>
+        </a>
+        <a class="social-icon" href="#" id="footerWhatsapp" aria-label="WhatsApp" data-nav-toast="Opening WhatsApp…">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 17l-3 1 1-3a7 7 0 1 1 2 2Z"/><path d="M9 10c0 3 2 5 5 5"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h5>Explore</h5>
+      <a href="#" data-gate>Menu</a>
+      <a href="reservations.html">Reservations</a>
+      <a href="order.html">Order Online</a>
+      <a href="#gallery">Gallery</a>
+    </div>
+    <div class="footer-col">
+      <h5>Account</h5>
+      <a href="login/auth.html" data-nav-toast="Taking you to login…">Log In</a>
+      <a href="register/auth.html" data-nav-toast="Taking you to registration…">Sign Up</a>
+    </div>
+    <div class="footer-col">
+      <h5>Visit</h5>
+      <a href="#location">14 Raffia Close, VI, Lagos</a>
+      <a href="#location">Lunch 12:00–15:30</a>
+      <a href="#location">Dinner 18:00–23:00</a>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 Raffia Palm. All rights reserved.</div>
+</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCk8J-FExd7E5hOX8yVv7W0sIALleCrzD8",
+    authDomain: "meridian-kitchen-d50f8.firebaseapp.com",
+    projectId: "meridian-kitchen-d50f8",
+    storageBucket: "meridian-kitchen-d50f8.firebasestorage.app",
+    messagingSenderId: "757752916285",
+    appId: "1:757752916285:web:31057acfed329c233bbd54"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  /* ---------------- Toast system ---------------- */
+  function toast(message){
+    const stack = document.getElementById('toastStack');
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = message;
+    stack.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => el.remove(), 400);
+    }, 2600);
+  }
+
+  function gateToRegister(message){
+    toast(message || 'Registration required — redirecting…');
+    setTimeout(() => { window.location.href = 'register/auth.html'; }, 700);
+  }
+
+  document.querySelectorAll('[data-gate]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      gateToRegister('Please register or log in to view the full menu…');
+    });
+  });
+
+  document.querySelectorAll('[data-nav-toast]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const msg = el.getAttribute('data-nav-toast');
+      const href = el.getAttribute('href');
+      if(href && href !== '#'){
+        e.preventDefault();
+        toast(msg);
+        setTimeout(() => { window.location.href = href; }, 650);
+      }
+    });
+  });
+
+  /* ---------------- Fallback data ---------------- */
+  const FALLBACK_CATEGORIES = ["All","Popular","Breakfast","Grill","Rice","Seafood","Pasta","Desserts","Drinks"];
+  const FALLBACK_DISHES = [
+    { name:"Charred Iberico, Blood Orange", category:"Grill", price:18500, rating:4.8, image:"food1.jpg", description:"Open-flame pork, citrus glaze." },
+    { name:"Citrus-Cured Kingfish", category:"Seafood", price:14000, rating:4.7, image:"food2.jpg", description:"Line-caught, lightly cured." },
+    { name:"Saffron Risotto, Scallop", category:"Pasta", price:16200, rating:4.9, image:"food3.jpg", description:"Slow-cooked, pan-seared scallop." },
+    { name:"Jollof, Grilled Chicken", category:"Rice", price:9500, rating:4.9, image:"food4.jpg", description:"House blend, smoked chicken thigh." },
+    { name:"Dark Chocolate Tart", category:"Desserts", price:8500, rating:4.8, image:"food5.jpg", description:"70% cacao, sea salt." },
+    { name:"Grilled Salmon, Herb Butter", category:"Seafood", price:17500, rating:4.7, image:"food6.jpg", description:"Pan-seared, lemon herb butter." },
+    { name:"Truffle Tagliatelle", category:"Pasta", price:15800, rating:4.6, image:"food7.jpg", description:"Fresh pasta, black truffle." },
+    { name:"Mango Passion Cooler", category:"Drinks", price:4200, rating:4.5, image:"food8.jpg", description:"Fresh mango, passionfruit." }
+  ];
+  const FALLBACK_TESTIMONIALS = Array.from({length:12}).map((_,i) => ([
+    { name:"Ada O.", rating:5, review:"Best multi-cuisine spot in VI. The risotto is unreal.", date:"Jul 2026" },
+    { name:"Tunde A.", rating:5, review:"Fast service, food never disappoints.", date:"Jun 2026" },
+    { name:"Priya S.", rating:4, review:"Great ambience, generous portions.", date:"Jun 2026" },
+    { name:"Chidi E.", rating:5, review:"The grill section alone is worth the visit.", date:"May 2026" }
+  ][i % 4]));
+
+  const money = (n) => "₦" + Number(n).toLocaleString();
+  const initials = (name) => (name||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+  const stars = (r) => "★".repeat(Math.round(r)) + "☆".repeat(5-Math.round(r));
+
+  let allDishesCache = [];
+
+  /* ---------------- Site content ---------------- */
+  async function loadSiteContent(){
+    try{
+      const snap = await getDoc(doc(db, "siteContent", "home"));
+      if(snap.exists()){
+        const d = snap.data();
+        if(d.marquee) renderMarquee(d.marquee);
+        if(d.heroTagline) document.getElementById('heroTagline').textContent = d.heroTagline;
+        if(d.aboutText) document.getElementById('aboutText').textContent = d.aboutText;
+        if(d.offerTitle) document.getElementById('offerTitle').textContent = d.offerTitle;
+        if(d.offerText) document.getElementById('offerText').textContent = d.offerText;
+        if(d.locationTitle) document.getElementById('locationTitle').textContent = d.locationTitle;
+        if(d.locationText) document.getElementById('locationText').textContent = d.locationText;
+        if(d.instagram) document.getElementById('footerInstagram').href = d.instagram;
+        if(d.facebook) document.getElementById('footerFacebook').href = d.facebook;
+        if(d.tiktok) document.getElementById('footerTiktok').href = d.tiktok;
+        if(d.whatsapp) document.getElementById('footerWhatsapp').href = d.whatsapp;
+        return;
+      }
+    }catch(e){ console.warn('siteContent not available yet, using defaults', e); }
+    renderMarquee(["WELCOME TO RAFFIA PALM","FRESH FLAVOURS","PREMIUM DINING","ORDER NOW","WE'RE HAPPY TO SERVE YOU"]);
+  }
+  function renderMarquee(items){
+    const text = items.map(i => `<span>${i}</span>`).join("<span>•</span>");
+    document.getElementById('marqueeTrack').innerHTML = text + text;
+  }
+
+  /* ---------------- Categories ---------------- */
+  async function loadCategories(){
+    const el = document.getElementById('catScroll');
+    let cats = FALLBACK_CATEGORIES;
+    try{
+      const snap = await getDocs(query(collection(db,"categories"), orderBy("order")));
+      if(!snap.empty) cats = snap.docs.map(d => d.data().name);
+    }catch(e){ console.warn('categories not available yet, using defaults', e); }
+    el.innerHTML = cats.map(c => `<button class="cat-chip" data-gate>${c}</button>`).join("");
+    el.querySelectorAll('[data-gate]').forEach(b => b.addEventListener('click', () => gateToRegister('Please register or log in to browse the full menu…')));
+  }
+
+  /* ---------------- Dish cards ---------------- */
+  function dishCard(d){
+    const img = d.image ? d.image : 'food1.jpg';
+    return `
+      <article class="dish-card" data-observe>
+        <div class="dish-media">
+          <img src="${img}" alt="${d.name}" loading="lazy" onerror="this.style.opacity=0">
+          <button class="fav-btn" aria-label="Save to favourites" data-fav>♥</button>
+        </div>
+        <div class="dish-body">
+          <span class="dish-cat">${d.category || ''}</span>
+          <h4>${d.name}</h4>
+          <p class="dish-desc">${d.description || ''}</p>
+          <div class="dish-meta">
+            <span class="rating">${stars(d.rating||4.5)} <span style="color:var(--muted)">(${(d.rating||4.5).toFixed(1)})</span></span>
+            <span class="price">${money(d.price||0)}</span>
+          </div>
+          <button class="btn-cart" data-gate-dish>View on Menu</button>
+        </div>
+      </article>`;
+  }
+
+  async function loadDishes(field, gridId, count){
+    const el = document.getElementById(gridId);
+    el.innerHTML = Array.from({length: count}).map(()=>`<div class="dish-card skeleton" style="height:320px"></div>`).join("");
+    let dishes = [];
+    try{
+      const snap = await getDocs(query(collection(db,"dishes"), where(field,"==",true), limit(count)));
+      dishes = snap.docs.map(d => d.data());
+    }catch(e){ console.warn(`dishes(${field}) not available yet, using defaults`, e); }
+    if(dishes.length === 0) dishes = FALLBACK_DISHES.slice(0, count);
+    allDishesCache = [...allDishesCache, ...dishes].filter((d,i,arr) => arr.findIndex(x=>x.name===d.name)===i);
+    el.innerHTML = dishes.map(dishCard).join("");
+    el.querySelectorAll('[data-fav]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        btn.classList.toggle('active');
+        if(btn.classList.contains('active')) toast('Thanks for liking! ♥');
+      });
+    });
+    el.querySelectorAll('[data-gate-dish]').forEach(btn => {
+      btn.addEventListener('click', () => gateToRegister('Register or log in to view full dish details…'));
+    });
+    observeCards(el);
+  }
+
+  function observeCards(container){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach((entry,i)=>{
+        if(entry.isIntersecting){
+          setTimeout(()=>entry.target.classList.add('in-view'), i*60);
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold:0.15 });
+    container.querySelectorAll('[data-observe]').forEach(c => io.observe(c));
+  }
+
+  /* ---------------- Testimonials: continuous auto-scroll ---------------- */
+  async function loadTestimonials(){
+    let items = [];
+    try{
+      const snap = await getDocs(query(collection(db,"testimonials"), where("approved","==",true), orderBy("date","desc"), limit(50)));
+      items = snap.docs.map(d => d.data());
+    }catch(e){ console.warn('testimonials not available yet, using defaults', e); }
+    if(items.length === 0) items = FALLBACK_TESTIMONIALS;
+
+    const track = document.getElementById('testimonialTrack');
+    const cardHTML = (t) => `
+      <div class="t-card">
+        <div class="rating">${stars(t.rating||5)}</div>
+        <p class="quote">"${t.review}"</p>
+        <div class="t-person">
+          <span class="t-avatar">${initials(t.name)}</span>
+          <span><span class="name">${t.name}</span><br><span class="date">${t.date||''}</span></span>
+        </div>
+      </div>`;
+    // duplicate the set once for a seamless continuous loop
+    track.innerHTML = items.map(cardHTML).join("") + items.map(cardHTML).join("");
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce) return;
+
+    let offset = 0;
+    let paused = false;
+    const speed = 0.4; // px per frame
+    function step(){
+      if(!paused){
+        offset += speed;
+        const half = track.scrollWidth / 2;
+        if(offset >= half) offset = 0;
+        track.style.transform = `translateX(-${offset}px)`;
+      }
+      requestAnimationFrame(step);
+    }
+    const wrap = document.querySelector('.t-scroll-wrap');
+    wrap.addEventListener('mouseenter', () => paused = true);
+    wrap.addEventListener('mouseleave', () => paused = false);
+    wrap.addEventListener('touchstart', () => paused = true, {passive:true});
+    wrap.addEventListener('touchend', () => paused = false, {passive:true});
+    requestAnimationFrame(step);
+  }
+
+  /* ---------------- Gallery (below-fold) ---------------- */
+  function loadGallery(){
+    const el = document.getElementById('galleryRow');
+    const imgs = ["Raffia-pic1.jpg","Raffia-pic2.jpg","Raffia-pic3.jpg","Raffia-pic4.jpg","Raffia-pic5.jpg"];
+    el.innerHTML = imgs.map(src => `<img src="${src}" alt="Raffia Palm" loading="lazy" style="width:220px;height:160px;object-fit:cover;border-radius:12px;border:1px solid var(--glass-border);" onerror="this.remove()">`).join("");
+  }
+
+  /* ---------------- Scroll arrow buttons ---------------- */
+  document.querySelectorAll('[data-scroll-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = document.getElementById(btn.dataset.scrollTarget);
+      row.scrollBy({ left: Number(btn.dataset.dir) * 240, behavior:'smooth' });
+    });
+  });
+
+  /* ---------------- Search (inline, on-page) ---------------- */
+  document.getElementById('homeSearchForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const q = document.getElementById('homeSearchInput').value.trim().toLowerCase();
+    const resultsEl = document.getElementById('searchResults');
+    if(!q){ resultsEl.classList.add('hidden'); return; }
+
+    const pool = allDishesCache.length ? allDishesCache : FALLBACK_DISHES;
+    const matches = pool.filter(d => d.name.toLowerCase().includes(q) || (d.category||'').toLowerCase().includes(q));
+
+    resultsEl.classList.remove('hidden');
+    if(matches.length === 0){
+      resultsEl.innerHTML = `
+        <div class="sr-empty">
+          <p>Kindly register or log in to explore more and find your suited taste.</p>
+          <div class="btn-row">
+            <a href="register/auth.html" class="btn-primary" data-nav-toast="Taking you to registration…">Register</a>
+            <a href="login/auth.html" class="btn-secondary" data-nav-toast="Taking you to login…">Log In</a>
+          </div>
+        </div>`;
+      resultsEl.querySelectorAll('[data-nav-toast]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+          toast(el.getAttribute('data-nav-toast'));
+          setTimeout(() => { window.location.href = el.getAttribute('href'); }, 650);
+        });
+      });
+    } else {
+      resultsEl.innerHTML = matches.slice(0,6).map(d => `
+        <div class="sr-item" data-dish="${d.name}">
+          <span><span class="name">${d.name}</span><br><span class="cat">${d.category||''}</span></span>
+          <span class="price">${money(d.price||0)}</span>
+        </div>`).join("");
+      resultsEl.querySelectorAll('.sr-item').forEach(item => {
+        item.addEventListener('click', () => gateToRegister('Register or log in to view full dish details…'));
+      });
+    }
+  });
+
+  /* ---------------- Mobile drawer ---------------- */
+  const overlay = document.getElementById('overlay');
+  const drawer = document.getElementById('drawer');
+  function openDrawer(){ drawer.classList.add('open'); overlay.classList.add('open'); }
+  function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); }
+  document.getElementById('menuToggle').addEventListener('click', openDrawer);
+  document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+  drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', closeDrawer));
+
+  /* ---------------- Init ---------------- */
+  loadSiteContent();
+  loadCategories();
+  loadDishes("featured", "featuredGrid", 4).then(() => loadDishes("popular", "popularGrid", 4));
+  loadTestimonials();
+  loadGallery();
+</script>
+
+</body>
+</html>
