@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In — Raffia Palm</title>
+<meta name="description" content="Log in to your Raffia Palm account to explore the full menu, order online and reserve a table.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#171012; --bg-2:#1D1416;
+    --coral:#FF6B4A; --amber:#FFB648; --berry:#FF3D77;
+    --glass:rgba(255,255,255,0.06); --glass-strong:rgba(255,255,255,0.11); --glass-border:rgba(255,255,255,0.14);
+    --text:#FFF6EE; --muted:#C9B8AE;
+    --radius:12px; --ease:cubic-bezier(.22,.9,.25,1);
+    --error:#FF6B6B; --ok:#7CE0A0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{ color-scheme: dark; }
+  body{ background:var(--bg); color:var(--text); font-family:'Manrope',sans-serif; min-height:100vh; overflow-x:hidden; }
+  h1,h2,.display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
+  a{color:inherit; text-decoration:none;}
+  img{max-width:100%; display:block;}
+  button, input{font-family:inherit;}
+  a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--amber); outline-offset:3px; }
+
+  .blobs{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .blob{ position:absolute; border-radius:50%; filter:blur(90px); opacity:0.28; }
+  .blob.b1{ width:480px; height:480px; background:var(--coral); top:-140px; right:-100px; }
+  .blob.b2{ width:420px; height:420px; background:var(--amber); bottom:-160px; left:-140px; }
+
+  .toast-stack{ position:fixed; top:18px; left:18px; z-index:200; display:flex; flex-direction:column; gap:10px; }
+  .toast{ background:rgba(23,16,18,0.94); border:1px solid var(--glass-border); border-left:3px solid var(--coral); color:var(--text); padding:13px 18px; border-radius:8px; font-size:0.86rem; font-weight:500; box-shadow:0 14px 30px -10px rgba(0,0,0,0.5); transform:translateX(-120%); transition:transform .35s var(--ease); max-width:280px; }
+  .toast.show{ transform:translateX(0); }
+  .toast.ok{ border-left-color:var(--ok); }
+  .toast.err{ border-left-color:var(--error); }
+
+  header{ position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; padding:20px clamp(20px,5vw,56px); }
+  .brand{ display:flex; align-items:center; gap:11px; font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; }
+  .brand img.logo{ width:34px; height:34px; border-radius:8px; object-fit:cover; }
+  .back-link{ font-size:0.85rem; color:var(--muted); }
+  .back-link:hover{ color:var(--text); }
+
+  main{ position:relative; z-index:1; display:flex; justify-content:center; align-items:center; min-height:78vh; padding:20px; }
+  .auth-card{
+    width:100%; max-width:440px; background:var(--glass); border:1px solid var(--glass-border);
+    backdrop-filter:blur(14px); border-radius:var(--radius); padding:clamp(28px,5vw,44px); position:relative;
+  }
+  .auth-card::before{ content:''; position:absolute; top:9px; left:9px; right:9px; bottom:9px; border:1px solid rgba(255,182,72,0.16); border-radius:7px; pointer-events:none; }
+  .auth-card .eyebrow{ font-size:0.74rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:12px; display:block; }
+  .auth-card h1{ font-size:clamp(1.6rem,4vw,2.1rem); font-weight:600; margin-bottom:8px; }
+  .auth-card .sub{ color:var(--muted); font-size:0.9rem; font-weight:300; margin-bottom:28px; }
+
+  .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+  .field label{ font-size:0.78rem; color:var(--muted); }
+  .input-wrap{ position:relative; display:flex; align-items:center; }
+  .input-wrap svg{ position:absolute; left:13px; width:16px; height:16px; color:var(--muted); pointer-events:none; }
+  .field input{
+    width:100%; background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:8px;
+    padding:12px 14px 12px 38px; color:var(--text); font-size:0.92rem; transition:border-color .3s var(--ease), background .3s var(--ease);
+  }
+  .field input:focus{ outline:none; border-color:var(--amber); background:rgba(255,255,255,0.05); }
+  .field input.invalid{ border-color:var(--error); }
+  .field .err-msg{ font-size:0.74rem; color:var(--error); min-height:1em; }
+
+  .pw-wrap svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted); pointer-events:none; }
+  .pw-wrap input{ padding-left:38px; }
+  .pw-toggle{ position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted); font-size:0.76rem; cursor:pointer; }
+  .pw-toggle:hover{ color:var(--text); }
+
+  .row-between{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+  .check-inline{ display:flex; align-items:center; gap:8px; font-size:0.84rem; color:var(--muted); }
+  .check-inline input{ accent-color:var(--coral); width:15px; height:15px; }
+  .forgot-link{ font-size:0.84rem; color:var(--amber); }
+
+  .btn-submit{
+    width:100%; padding:14px; border-radius:8px; border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--coral), var(--amber)); color:#1a0e0a; font-weight:700; font-size:0.94rem;
+    transition: transform .25s var(--ease), box-shadow .25s var(--ease), opacity .25s var(--ease);
+  }
+  .btn-submit:hover{ transform:translateY(-2px); box-shadow:0 14px 30px -10px rgba(255,107,74,0.5); }
+  .btn-submit:disabled{ opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .divider{ display:flex; align-items:center; gap:12px; margin:22px 0; color:var(--muted); font-size:0.78rem; }
+  .divider::before, .divider::after{ content:''; flex:1; height:1px; background:var(--glass-border); }
+
+  .switch-line{ text-align:center; font-size:0.86rem; color:var(--muted); }
+  .switch-line a{ color:var(--amber); font-weight:600; }
+
+  .form-status{ font-size:0.82rem; margin-top:8px; min-height:1.2em; }
+  .form-status.err{ color:var(--error); }
+  .form-status.ok{ color:var(--ok); }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blobs"><div class="blob b1"></div><div class="blob b2"></div></div>
+<div class="toast-stack" id="toastStack"></div>
+
+<header>
+  <a href="../index.html" class="brand">
+    <img src="../Raffia.jpg" class="logo" alt="Raffia Palm logo" onerror="this.style.display='none'">
+    Raffia Palm
+  </a>
+  <a href="../index.html" class="back-link">← Back to home</a>
+</header>
+
+<main>
+  <form class="auth-card" id="loginForm" novalidate>
+    <span class="eyebrow">Welcome Back</span>
+    <h1>Log in to Raffia Palm</h1>
+    <p class="sub">Access the full menu, your order history and reservations.</p>
+
+    <div class="field">
+      <label for="email">Email</label>
+      <div class="input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 6.5l9 6 9-6"/></svg>
+        <input type="email" id="email" name="email" autocomplete="email" required>
+      </div>
+      <span class="err-msg" id="err-email"></span>
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="input-wrap pw-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+        <button type="button" class="pw-toggle" data-toggle="password">Show</button>
+      </div>
+      <span class="err-msg" id="err-password"></span>
+    </div>
+
+    <div class="row-between">
+      <label class="check-inline"><input type="checkbox" id="remember" name="remember" checked> Remember me</label>
+      <a href="#" class="forgot-link" id="forgotLink">Forgot password?</a>
+    </div>
+
+    <button type="submit" class="btn-submit" id="submitBtn">Log In</button>
+    <div class="form-status" id="formStatus" role="status"></div>
+
+    <div class="divider">or</div>
+    <p class="switch-line">Don't have an account? <a href="../register/auth.html">Register</a></p>
+  </form>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCk8J-FExd7E5hOX8yVv7W0sIALleCrzD8",
+    authDomain: "meridian-kitchen-d50f8.firebaseapp.com",
+    projectId: "meridian-kitchen-d50f8",
+    storageBucket: "meridian-kitchen-d50f8.firebasestorage.app",
+    messagingSenderId: "757752916285",
+    appId: "1:757752916285:web:31057acfed329c233bbd54"
+  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  function toast(message, kind = ''){
+    const stack = document.getElementById('toastStack');
+    const el = document.createElement('div');
+    el.className = `toast ${kind}`;
+    el.textContent = message;
+    stack.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 3200);
+  }
+
+  document.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.toggle);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? 'Show' : 'Hide';
+    });
+  });
+
+  function setError(id, message){
+    const input = document.getElementById(id);
+    const errEl = document.getElementById('err-' + id);
+    if(message){ input.classList.add('invalid'); errEl.textContent = message; }
+    else { input.classList.remove('invalid'); errEl.textContent = ''; }
+  }
+
+  const form = document.getElementById('loginForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const status = document.getElementById('formStatus');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = form.email.value.trim();
+    const password = form.password.value;
+    const remember = form.remember.checked;
+
+    let ok = true;
+    if(!/^\S+@\S+\.\S+$/.test(email)){ setError('email','Enter a valid email address.'); ok = false; } else setError('email','');
+    if(!password){ setError('password','Enter your password.'); ok = false; } else setError('password','');
+    if(!ok) return;
+
+    submitBtn.disabled = true;
+    status.className = 'form-status';
+    status.textContent = 'Logging in…';
+
+    try{
+      await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+      await signInWithEmailAndPassword(auth, email, password);
+
+      status.className = 'form-status ok';
+      status.textContent = 'Login successful.';
+      toast('Login successful — redirecting to menu page…', 'ok');
+      setTimeout(() => { window.location.href = '../menu.html'; }, 1000);
+
+    }catch(err){
+      console.error(err);
+      let message = 'Something went wrong. Please try again.';
+      switch(err.code){
+        case 'auth/invalid-email': message = 'That email address looks invalid.'; break;
+        case 'auth/user-not-found':
+        case 'auth/invalid-credential':
+          message = 'Incorrect email or password.'; break;
+        case 'auth/wrong-password': message = 'Incorrect email or password.'; break;
+        case 'auth/too-many-requests': message = 'Too many attempts — please wait a moment and try again.'; break;
+        case 'auth/network-request-failed': message = 'Network error — check your connection and try again.'; break;
+        case 'auth/user-disabled': message = 'This account has been disabled. Contact support.'; break;
+      }
+      status.className = 'form-status err';
+      status.textContent = message;
+      toast(message, 'err');
+      submitBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('forgotLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = form.email.value.trim();
+    if(!/^\S+@\S+\.\S+$/.test(email)){
+      setError('email','Enter your email above first, then tap "Forgot password?" again.');
+      toast('Enter your email above first.', 'err');
+      return;
+    }
+    try{
+      await sendPasswordResetEmail(auth, email);
+      toast('Password reset email sent — check your inbox.', 'ok');
+    }catch(err){
+      console.error(err);
+      toast('Could not send reset email. Please check the address and try again.', 'err');
+    }
+  });
+</script>
+
+</body>
+</html>
