@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account — Raffia Palm</title>
+<meta name="description" content="Register a Raffia Palm account to explore the full menu, order online and reserve a table.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#171012; --bg-2:#1D1416;
+    --coral:#FF6B4A; --amber:#FFB648; --berry:#FF3D77;
+    --glass:rgba(255,255,255,0.06); --glass-strong:rgba(255,255,255,0.11); --glass-border:rgba(255,255,255,0.14);
+    --text:#FFF6EE; --muted:#C9B8AE;
+    --radius:12px; --ease:cubic-bezier(.22,.9,.25,1);
+    --error:#FF6B6B; --ok:#7CE0A0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{ color-scheme: dark; }
+  body{ background:var(--bg); color:var(--text); font-family:'Manrope',sans-serif; min-height:100vh; overflow-x:hidden; }
+  h1,h2,.display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
+  a{color:inherit; text-decoration:none;}
+  img{max-width:100%; display:block;}
+  button, input{font-family:inherit;}
+  a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--amber); outline-offset:3px; }
+
+  .blobs{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .blob{ position:absolute; border-radius:50%; filter:blur(90px); opacity:0.28; }
+  .blob.b1{ width:480px; height:480px; background:var(--coral); top:-140px; left:-100px; }
+  .blob.b2{ width:420px; height:420px; background:var(--amber); bottom:-160px; right:-140px; }
+
+  .toast-stack{ position:fixed; top:18px; left:18px; z-index:200; display:flex; flex-direction:column; gap:10px; }
+  .toast{ background:rgba(23,16,18,0.94); border:1px solid var(--glass-border); border-left:3px solid var(--coral); color:var(--text); padding:13px 18px; border-radius:8px; font-size:0.86rem; font-weight:500; box-shadow:0 14px 30px -10px rgba(0,0,0,0.5); transform:translateX(-120%); transition:transform .35s var(--ease); max-width:280px; }
+  .toast.show{ transform:translateX(0); }
+  .toast.ok{ border-left-color:var(--ok); }
+  .toast.err{ border-left-color:var(--error); }
+
+  header{ position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; padding:20px clamp(20px,5vw,56px); }
+  .brand{ display:flex; align-items:center; gap:11px; font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; }
+  .brand img.logo{ width:34px; height:34px; border-radius:8px; object-fit:cover; }
+  .back-link{ font-size:0.85rem; color:var(--muted); }
+  .back-link:hover{ color:var(--text); }
+
+  main{ position:relative; z-index:1; display:flex; justify-content:center; padding:20px 20px 80px; }
+  .auth-card{
+    width:100%; max-width:480px; background:var(--glass); border:1px solid var(--glass-border);
+    backdrop-filter:blur(14px); border-radius:var(--radius); padding:clamp(28px,5vw,44px); position:relative;
+  }
+  .auth-card::before{ content:''; position:absolute; top:9px; left:9px; right:9px; bottom:9px; border:1px solid rgba(255,182,72,0.16); border-radius:7px; pointer-events:none; }
+  .auth-card .eyebrow{ font-size:0.74rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:12px; display:block; }
+  .auth-card h1{ font-size:clamp(1.6rem,4vw,2.1rem); font-weight:600; margin-bottom:8px; }
+  .auth-card .sub{ color:var(--muted); font-size:0.9rem; font-weight:300; margin-bottom:28px; }
+
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  @media (max-width:520px){ .field-row{ grid-template-columns:1fr; } }
+  .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .field label{ font-size:0.78rem; color:var(--muted); }
+  .field .req{ color:var(--coral); }
+  .input-wrap{ position:relative; display:flex; align-items:center; }
+  .input-wrap svg{ position:absolute; left:13px; width:16px; height:16px; color:var(--muted); pointer-events:none; }
+  .field input{
+    width:100%; background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:8px;
+    padding:12px 14px 12px 38px; color:var(--text); font-size:0.92rem; transition:border-color .3s var(--ease), background .3s var(--ease);
+  }
+  .field input:focus{ outline:none; border-color:var(--amber); background:rgba(255,255,255,0.05); }
+  .field input.invalid{ border-color:var(--error); }
+  .field .err-msg{ font-size:0.74rem; color:var(--error); min-height:1em; }
+
+  .field input[type="date"]{ padding-right:12px; }
+  .field input[type="date"]::-webkit-calendar-picker-indicator{
+    filter: invert(0.85) sepia(1) saturate(3) hue-rotate(-10deg);
+    cursor:pointer;
+    opacity:0.85;
+  }
+
+  .form-section{ margin-bottom:28px; }
+  .form-section .section-title{
+    display:flex; align-items:center; gap:12px; margin-bottom:18px;
+  }
+  .form-section .section-title span{
+    font-family:'Fraunces',serif; font-size:0.95rem; font-weight:600; color:var(--amber); white-space:nowrap;
+  }
+  .form-section .section-title::after{ content:''; flex:1; height:1px; background:var(--glass-border); }
+
+  .pw-wrap{ position:relative; }
+  .pw-wrap svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted); pointer-events:none; }
+  .pw-wrap input{ padding-left:38px; }
+  .pw-toggle{ position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted); font-size:0.76rem; cursor:pointer; }
+  .pw-toggle:hover{ color:var(--text); }
+
+  .strength{ height:4px; border-radius:3px; background:var(--glass-strong); margin-top:6px; overflow:hidden; }
+  .strength-bar{ height:100%; width:0%; background:var(--error); transition: width .3s var(--ease), background .3s var(--ease); }
+
+  .check-row{ display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; }
+  .check-row input[type=checkbox]{ margin-top:3px; width:16px; height:16px; accent-color:var(--coral); flex:0 0 auto; }
+  .check-row label{ font-size:0.83rem; color:var(--muted); font-weight:300; line-height:1.5; }
+  .check-row a{ color:var(--amber); }
+
+  .btn-submit{
+    width:100%; padding:14px; border-radius:8px; border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--coral), var(--amber)); color:#1a0e0a; font-weight:700; font-size:0.94rem;
+    transition: transform .25s var(--ease), box-shadow .25s var(--ease), opacity .25s var(--ease);
+    margin-top:6px;
+  }
+  .btn-submit:hover{ transform:translateY(-2px); box-shadow:0 14px 30px -10px rgba(255,107,74,0.5); }
+  .btn-submit:disabled{ opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .divider{ display:flex; align-items:center; gap:12px; margin:22px 0; color:var(--muted); font-size:0.78rem; }
+  .divider::before, .divider::after{ content:''; flex:1; height:1px; background:var(--glass-border); }
+
+  .switch-line{ text-align:center; font-size:0.86rem; color:var(--muted); }
+  .switch-line a{ color:var(--amber); font-weight:600; }
+
+  .form-status{ font-size:0.82rem; margin-top:8px; min-height:1.2em; }
+  .form-status.err{ color:var(--error); }
+  .form-status.ok{ color:var(--ok); }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blobs"><div class="blob b1"></div><div class="blob b2"></div></div>
+<div class="toast-stack" id="toastStack"></div>
+
+<header>
+  <a href="../index.html" class="brand">
+    <img src="../Raffia.jpg" class="logo" alt="Raffia Palm logo" onerror="this.style.display='none'">
+    Raffia Palm
+  </a>
+  <a href="../index.html" class="back-link">← Back to home</a>
+</header>
+
+<main>
+  <form class="auth-card" id="registerForm" novalidate>
+    <span class="eyebrow">Create Account</span>
+    <h1>Join Raffia Palm</h1>
+    <p class="sub">Register to browse the full menu, order online and reserve a table.</p>
+
+    <div class="form-section">
+      <div class="section-title"><span>Personal Details</span></div>
+
+      <div class="field">
+        <label for="fullName">Full name <span class="req">*</span></label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.5-3.5 4.5-5 7-5s5.5 1.5 7 5"/></svg>
+          <input type="text" id="fullName" name="fullName" autocomplete="name" required>
+        </div>
+        <span class="err-msg" id="err-fullName"></span>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="email">Email <span class="req">*</span></label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 6.5l9 6 9-6"/></svg>
+            <input type="email" id="email" name="email" autocomplete="email" required>
+          </div>
+          <span class="err-msg" id="err-email"></span>
+        </div>
+        <div class="field">
+          <label for="phone">Phone <span class="req">*</span></label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h3l1.5 5-2 1.5a11 11 0 0 0 6 6l1.5-2 5 1.5v3a2 2 0 0 1-2 2C11 20 4 13 4 5a2 2 0 0 1 2-2Z"/></svg>
+            <input type="tel" id="phone" name="phone" autocomplete="tel" required>
+          </div>
+          <span class="err-msg" id="err-phone"></span>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="dob">Date of birth</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <input type="date" id="dob" name="dob">
+          </div>
+          <span class="err-msg" id="err-dob"></span>
+        </div>
+        <div class="field">
+          <label for="address">Delivery address</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-6.3 7-11.5a7 7 0 1 0-14 0C5 14.7 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+            <input type="text" id="address" name="address" autocomplete="street-address" placeholder="Street, area, city">
+          </div>
+          <span class="err-msg" id="err-address"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title"><span>Security</span></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="password">Password <span class="req">*</span></label>
+          <div class="pw-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="password" name="password" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" data-toggle="password">Show</button>
+          </div>
+          <div class="strength"><div class="strength-bar" id="strengthBar"></div></div>
+          <span class="err-msg" id="err-password"></span>
+        </div>
+        <div class="field">
+          <label for="confirmPassword">Confirm password <span class="req">*</span></label>
+          <div class="pw-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" data-toggle="confirmPassword">Show</button>
+          </div>
+          <span class="err-msg" id="err-confirmPassword"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title"><span>Preferences</span></div>
+
+      <div class="check-row">
+        <input type="checkbox" id="marketingOptIn" name="marketingOptIn">
+        <label for="marketingOptIn">Send me offers and updates by email/SMS.</label>
+      </div>
+
+      <div class="check-row">
+        <input type="checkbox" id="terms" name="terms" required>
+        <label for="terms">I agree to the <a href="../terms.html">Terms of Service</a> and <a href="../privacy.html">Privacy Policy</a>. <span class="req">*</span></label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit" id="submitBtn">Create Account</button>
+    <div class="form-status" id="formStatus" role="status"></div>
+
+    <div class="divider">or</div>
+    <p class="switch-line">Already have an account? <a href="../login/auth.html">Log in</a></p>
+  </form>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCk8J-FExd7E5hOX8yVv7W0sIALleCrzD8",
+    authDomain: "meridian-kitchen-d50f8.firebaseapp.com",
+    projectId: "meridian-kitchen-d50f8",
+    storageBucket: "meridian-kitchen-d50f8.firebasestorage.app",
+    messagingSenderId: "757752916285",
+    appId: "1:757752916285:web:31057acfed329c233bbd54"
+  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  function toast(message, kind = ''){
+    const stack = document.getElementById('toastStack');
+    const el = document.createElement('div');
+    el.className = `toast ${kind}`;
+    el.textContent = message;
+    stack.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 3200);
+  }
+
+  // Show/hide password
+  document.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.toggle);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? 'Show' : 'Hide';
+    });
+  });
+
+  // Password strength meter
+  const pwInput = document.getElementById('password');
+  const strengthBar = document.getElementById('strengthBar');
+  pwInput.addEventListener('input', () => {
+    const v = pwInput.value;
+    let score = 0;
+    if(v.length >= 8) score++;
+    if(/[A-Z]/.test(v)) score++;
+    if(/[0-9]/.test(v)) score++;
+    if(/[^A-Za-z0-9]/.test(v)) score++;
+    const pct = (score/4)*100;
+    strengthBar.style.width = pct + '%';
+    strengthBar.style.background = score <= 1 ? '#FF6B6B' : score === 2 ? '#FFB648' : score === 3 ? '#FFD666' : '#7CE0A0';
+  });
+
+  function setError(id, message){
+    const input = document.getElementById(id);
+    const errEl = document.getElementById('err-' + id);
+    if(message){
+      input.classList.add('invalid');
+      errEl.textContent = message;
+    } else {
+      input.classList.remove('invalid');
+      errEl.textContent = '';
+    }
+  }
+
+  function validate(data){
+    let ok = true;
+    if(!data.fullName || data.fullName.trim().length < 2){ setError('fullName','Please enter your full name.'); ok = false; } else setError('fullName','');
+    if(!/^\S+@\S+\.\S+$/.test(data.email)){ setError('email','Enter a valid email address.'); ok = false; } else setError('email','');
+    if(!/^[0-9+()\-\s]{7,15}$/.test(data.phone)){ setError('phone','Enter a valid phone number.'); ok = false; } else setError('phone','');
+    if(data.password.length < 8){ setError('password','Use at least 8 characters.'); ok = false; } else setError('password','');
+    if(data.password !== data.confirmPassword){ setError('confirmPassword','Passwords do not match.'); ok = false; } else setError('confirmPassword','');
+    if(!data.terms){ toast('Please accept the Terms and Privacy Policy to continue.', 'err'); ok = false; }
+    return ok;
+  }
+
+  const form = document.getElementById('registerForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const status = document.getElementById('formStatus');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+      fullName: form.fullName.value.trim(),
+      email: form.email.value.trim(),
+      phone: form.phone.value.trim(),
+      dob: form.dob.value || null,
+      address: form.address.value.trim() || null,
+      password: form.password.value,
+      confirmPassword: form.confirmPassword.value,
+      marketingOptIn: form.marketingOptIn.checked,
+      terms: form.terms.checked
+    };
+
+    if(!validate(data)) return;
+
+    submitBtn.disabled = true;
+    status.className = 'form-status';
+    status.textContent = 'Creating your account…';
+
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      await updateProfile(cred.user, { displayName: data.fullName });
+
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        dob: data.dob,
+        address: data.address,
+        marketingOptIn: data.marketingOptIn,
+        role: 'customer',
+        createdAt: serverTimestamp()
+      });
+
+      status.className = 'form-status ok';
+      status.textContent = 'Account created! Redirecting…';
+      toast('Welcome to Raffia Palm — account created.', 'ok');
+      setTimeout(() => { window.location.href = '../login/auth.html'; }, 1100);
+
+    }catch(err){
+      console.error(err);
+      let message = 'Something went wrong. Please try again.';
+      switch(err.code){
+        case 'auth/email-already-in-use': message = 'That email is already registered. Try logging in instead.'; break;
+        case 'auth/invalid-email': message = 'That email address looks invalid.'; break;
+        case 'auth/weak-password': message = 'Please choose a stronger password.'; break;
+        case 'auth/network-request-failed': message = 'Network error — check your connection and try again.'; break;
+      }
+      status.className = 'form-status err';
+      status.textContent = message;
+      toast(message, 'err');
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
